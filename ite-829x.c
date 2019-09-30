@@ -64,7 +64,7 @@ int main(int count, char **arguments)
 	hid_device *keyboard = hid_open(VID, PID, NULL);
 	if (keyboard == NULL) {
 		fprintf(stderr, "Could not open keyboard [%04x:%04x]\n", VID, PID);
-		return 1;
+		return 2;
 	}
 
 	unsigned char brightness = 0;
@@ -73,7 +73,7 @@ int main(int count, char **arguments)
 
 	if (set_brightness(keyboard, brightness) == -1) {
 		fprintf(stderr, "Could not set brightness to %hhu - %ls\n", brightness, hid_error(keyboard));
-		return 2;
+		return 1;
 	}
 
 	hid_close(keyboard);
