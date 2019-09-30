@@ -54,11 +54,40 @@ int set_brightness(hid_device *keyboard, unsigned char brightness)
 	return hid_send_feature_report(keyboard, report, sizeof(report));
 }
 
+/* Executes the requested operation on the given keyboard.
+ * Returns 0 if successful and 1 in case of failure.
+ */
+int ite_829x(hid_device *keyboard, char *command, char *parameter)
+{
+
+	int (*set)(hid_device *, unsigned char) = set_brightness;
+	unsigned char value = 0;
+	const char *format = "Could not set brightness to %hhu - %ls\n";
+
+	switch (*command) {
+	case '\0':
+		break;
+	case 'b':
+		value = atoi(parameter);
+		break;
+	default:
+		value = atoi(command);
+		break;
+	}
+
+	if (set(keyboard, value) == -1) {
+		fprintf(stderr, format, value, hid_error(keyboard));
+		return 1;
+	}
+
+	return 0;
+}
+
 int main(int count, char **arguments)
 {
 	if (hid_init() == -1) {
 		fputs("Error during hidapi-libusb initialization\n", stderr);
-		return 3;
+		return 4;
 	}
 
 	hid_device *keyboard = hid_open(VID, PID, NULL);
@@ -67,21 +96,20 @@ int main(int count, char **arguments)
 		return 2;
 	}
 
-	unsigned char brightness = 0;
-	if (count > 1)
-		brightness = atoi(arguments[1]);
-
-	if (set_brightness(keyboard, brightness) == -1) {
-		fprintf(stderr, "Could not set brightness to %hhu - %ls\n", brightness, hid_error(keyboard));
-		return 1;
+	if (count != 3) {
+		fprintf(stderr, "%s command parameter\n", *arguments);
+		return 3;
 	}
+
+	int code = ite_829x(keyboard, arguments[1], arguments[2]);
 
 	hid_close(keyboard);
 
 	if (hid_exit() == -1) {
 		fputs("Error during hidapi-libusb finalization\n", stderr);
-		return 4;
+		if (code == 0)
+			return 5;
 	}
 
-	return 0;
+	return code;
 }
