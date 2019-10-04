@@ -62,7 +62,7 @@ int ite_829x(hid_device *keyboard, char *command, char *parameter)
 
 	int (*set)(hid_device *, unsigned char) = set_brightness;
 	unsigned char value = 0;
-	const char *format = "Could not set brightness to %hhu - %ls\n";
+	const char *name = "brightness";
 
 	switch (*command) {
 	case '\0':
@@ -76,7 +76,8 @@ int ite_829x(hid_device *keyboard, char *command, char *parameter)
 	}
 
 	if (set(keyboard, value) == -1) {
-		fprintf(stderr, format, value, hid_error(keyboard));
+		fprintf(stderr, "Could not set %s to %hhu - %ls\n",
+			name, value, hid_error(keyboard));
 		return 1;
 	}
 
