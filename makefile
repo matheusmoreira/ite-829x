@@ -7,6 +7,8 @@ model = ite-829x
 $(model) : $(model).c
 	$(CC) -std=c99 $(CPPFLAGS) $(CFLAGS) -lhidapi-libusb $(LDFLAGS) -o $@ $<
 
-.PHONY: clean
+.PHONY: clean all
+.DEFAULT_GOAL = all
+all: $(model)
 clean:
 	rm $(model)
