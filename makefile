@@ -3,7 +3,7 @@
 model = ite-829x
 
 $(model) : $(model).c
-	gcc -std=c99 -Wall -Wextra -Wpedantic -lhidapi-libusb -o $@ $<
+	$(CC) -std=c99 -Wall -Wextra -Wpedantic $(CPPFLAGS) $(CFLAGS) -lhidapi-libusb $(LDFLAGS) -o $@ $<
 
 .PHONY: clean
 clean:
