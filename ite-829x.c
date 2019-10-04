@@ -80,6 +80,75 @@ int set_speed(hid_device *keyboard, unsigned char speed)
 	return hid_send_feature_report(keyboard, report, sizeof(report));
 }
 
+/* Clevo Control Center
+ * Effects
+ * Wireshark Leftover Capture Data
+ *
+ * 	0	Wave    	cc00040000007f
+ * 	1	Breathe 	cc0a000000007f
+ * 	2	Scan    	cc000a0000007f
+ * 	3	Blink   	cc0b000000007f
+ * 	4	Random  	cc000900000000
+ * 	5	Ripple  	cc070000000000
+ * 	6	Snake   	cc000b00000053
+ *
+ * There seems to be no pattern to it. Does the value of the last byte matter?
+ * My keyboard apparently doesn't support the ripple effect,
+ * even though it is present in the Clevo Control Center interface.
+ */
+int set_effects(hid_device *keyboard, unsigned char effect)
+{
+	if (!keyboard)
+		return -1;
+
+	unsigned char effect1, effect2, last = 0x7F;
+
+	switch (effect) {
+	default:
+		return -2;
+	case 0:
+		effect1 = 0x00;
+		effect2 = 0x04;
+		break;
+	case 1:
+		effect1 = 0x0A;
+		effect2 = 0x00;
+		break;
+	case 2:
+		effect1 = 0x00;
+		effect2 = 0x0A;
+		break;
+	case 3:
+		effect1 = 0x0B;
+		effect2 = 0x00;
+		break;
+	case 4:
+		effect1 = 0x00;
+		effect2 = 0x09;
+		last  = 0x00;
+		break;
+	case 5:
+		effect1 = 0x07;
+		effect2 = 0x00;
+		last  = 0x00;
+		break;
+	case 6:
+		effect1 = 0x00;
+		effect2 = 0x0B;
+		last  = 0x53;
+		break;
+	}
+
+	const unsigned char report[] = {
+		0xCC,
+		effect1, effect2,
+		0x00, 0x00, 0x00,
+		last
+	};
+
+	return hid_send_feature_report(keyboard, report, sizeof(report));
+}
+
 /* Executes the requested operation on the given keyboard.
  * Returns 0 if successful and 1 in case of failure.
  */
@@ -104,9 +173,14 @@ int ite_829x(hid_device *keyboard, char *command, char *parameter)
 		value = atoi(parameter);
 		name = "speed";
 		break;
+	case 'e':
+		set = set_effects;
+		value = atoi(parameter);
+		name = "effect";
+		break;
 	}
 
-	if (set(keyboard, value) == -1) {
+	if (set(keyboard, value) < 0) {
 		fprintf(stderr, "Could not set %s to %hhu - %ls\n",
 			name, value, hid_error(keyboard));
 		return 1;
