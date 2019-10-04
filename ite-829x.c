@@ -172,6 +172,59 @@ int reset(hid_device *keyboard, unsigned char unused)
 	return hid_send_feature_report(keyboard, report, sizeof(report));
 }
 
+/* Clevo Control Center
+ * RGB color of LEDs
+ * Wireshark Leftover Capture Data
+ *
+ * 	cc01000000007f
+ * 	cc01llrrggbb7f
+ *
+ * ll = which LED to configure
+ * rr = red
+ * gg = green
+ * bb = blue
+ *
+ * LED codes:
+ *
+ *   0 - 19 	Escape -> PageDown
+ *  32 - 43 	Tilde -> Minus
+ *  45 - 51 	Equals -> KeypadMinus
+ *  64 - 83 	Tab1 -> KeypadPlus1
+ *  96 - 108	CapsLock1 -> SingleQuote
+ * 110 - 115	Enter1 -> KeypadPlus2
+ * 128      	Shift1
+ * 130 - 147	Shift2 -> KeypadEnter1
+ * 160 - 165	Ctrl1 -> Spacebar1
+ * 169 - 179	Spacebar2 -> KeypadEnter2
+ *
+ * 102 keys.
+ * 114 LEDs.
+ *
+ * Sets the color of each individual LED.
+ * Some keys are lit by more than one LED.
+ * All of them can be controlled individually.
+ * After resetting the keyboard, all keys must be reconfigured.
+ */
+int set_led_color(hid_device *keyboard, unsigned char led)
+{
+	if (!keyboard)
+		return -1;
+
+	// The keyboard's default color is blue.
+	// That's how it's lit up when the computer turns on.
+	// Use the default color for now. Parameters can be added later.
+	unsigned char r = 0x00, g = 0x00, b = 0xFF;
+
+	const unsigned char report[] = {
+		0xCC,
+		0x01, led,
+		r, g, b,
+		0x7F
+	};
+
+	return hid_send_feature_report(keyboard, report, sizeof(report));
+}
+
 /* Executes the requested operation on the given keyboard.
  * Returns 0 if successful and 1 in case of failure.
  */
@@ -204,6 +257,11 @@ int ite_829x(hid_device *keyboard, char *command, char *parameter)
 	case 'r':
 		set = reset;
 		name = "reset";
+		break;
+	case 'l':
+		set = set_led_color;
+		value = atoi(parameter);
+		name = "key";
 		break;
 	}
 
