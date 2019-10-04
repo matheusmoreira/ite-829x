@@ -54,6 +54,32 @@ int set_brightness(hid_device *keyboard, unsigned char brightness)
 	return hid_send_feature_report(keyboard, report, sizeof(report));
 }
 
+/* Clevo Control Center
+ * Speed
+ * Wireshark Leftover Capture Data
+ *
+ * 	1	cc090a0000007f
+ * 	2	cc090a0100007f
+ * 	3	cc090a0200007f
+ */
+int set_speed(hid_device *keyboard, unsigned char speed)
+{
+	if (!keyboard)
+		return -1;
+
+	if (speed > 0x02)
+		speed = 0x02;
+
+	const unsigned char report[] = {
+		0xCC, 0x09,
+		0x0A, speed,
+		0x00, 0x00,
+		0x7F
+	};
+
+	return hid_send_feature_report(keyboard, report, sizeof(report));
+}
+
 /* Executes the requested operation on the given keyboard.
  * Returns 0 if successful and 1 in case of failure.
  */
@@ -72,6 +98,11 @@ int ite_829x(hid_device *keyboard, char *command, char *parameter)
 		break;
 	default:
 		value = atoi(command);
+		break;
+	case 's':
+		set = set_speed;
+		value = atoi(parameter);
+		name = "speed";
 		break;
 	}
 
