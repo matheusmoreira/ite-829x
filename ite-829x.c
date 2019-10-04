@@ -149,6 +149,29 @@ int set_effects(hid_device *keyboard, unsigned char effect)
 	return hid_send_feature_report(keyboard, report, sizeof(report));
 }
 
+/* Resets the keyboard back to a clean state.
+ * Turns off all LEDs and clears their color configuration.
+ * Stops any keyboard effects.
+ *
+ * Clevo Control Center sends this report when the user switches to normal mode
+ * from effects mode. It follows up with over a hundred reports
+ * that reconfigure the LED colors for each individual key.
+ *
+ * 	cc000c0000007f
+ *
+ */
+int reset(hid_device *keyboard, unsigned char unused)
+{
+	const unsigned char report[] = {
+		0xCC,
+		0x00, 0x0C,
+		0x00, 0x00, 0x00,
+		0x7F
+	};
+
+	return hid_send_feature_report(keyboard, report, sizeof(report));
+}
+
 /* Executes the requested operation on the given keyboard.
  * Returns 0 if successful and 1 in case of failure.
  */
@@ -177,6 +200,10 @@ int ite_829x(hid_device *keyboard, char *command, char *parameter)
 		set = set_effects;
 		value = atoi(parameter);
 		name = "effect";
+		break;
+	case 'r':
+		set = reset;
+		name = "reset";
 		break;
 	}
 
