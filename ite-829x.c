@@ -269,21 +269,9 @@ unsigned int set_led_color(const size_t count, const char **arguments, void *con
 
 #include "cmd.c"
 
-/* Executes the requested operation on the given keyboard.
- * Returns 0 if successful and 1 in case of failure.
- */
-int ite_829x(hid_device *keyboard, FILE *input)
+static int to_exit_code(int status, hid_device *keyboard)
 {
-	struct command ite_829x_commands[] = {
-		{ "brightness", set_brightness, keyboard },
-		{ "speed",      set_speed,      keyboard },
-		{ "effects",    set_effects,    keyboard },
-		{ "reset",      reset,          keyboard },
-		{ "led",        set_led_color,  keyboard },
-		{ 0 }
-	};
-
-	switch (process_command_file(ite_829x_commands, input)) {
+	switch (status) {
 	case -2:
 		fputs("Memory allocation error\n", stderr);
 		return 4;
@@ -308,7 +296,30 @@ int ite_829x(hid_device *keyboard, FILE *input)
 	}
 }
 
-int main(int count, char **arguments)
+/* Executes the requested operation on the given keyboard.
+ * Returns 0 if successful and 1 in case of failure.
+ */
+int ite_829x(hid_device *keyboard, const char **arguments, FILE *input)
+{
+	struct command ite_829x_commands[] = {
+		{ "brightness", set_brightness, keyboard },
+		{ "speed",      set_speed,      keyboard },
+		{ "effects",    set_effects,    keyboard },
+		{ "reset",      reset,          keyboard },
+		{ "led",        set_led_color,  keyboard },
+		{ 0 }
+	};
+
+	int result = process_command_vector(ite_829x_commands, arguments);
+	int code = to_exit_code(result, keyboard);
+	if (code != 0)
+		return code;
+
+	result = process_command_file(ite_829x_commands, input);
+	return to_exit_code(result, keyboard);
+}
+
+int main(int count, const char **arguments)
 {
 	if (hid_init() == -1) {
 		fputs("Error during hidapi-libusb initialization\n", stderr);
@@ -321,7 +332,7 @@ int main(int count, char **arguments)
 		return 2;
 	}
 
-	int code = ite_829x(keyboard, stdin);
+	int code = ite_829x(keyboard, arguments + 1, stdin);
 
 	hid_close(keyboard);
 
