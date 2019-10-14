@@ -1,0 +1,16 @@
+language: c
+compiler:
+  - clang
+  - gcc
+script: make
+os: linux
+arch:
+  - amd64
+  - arm64
+
+dist: bionic
+addons:
+  apt:
+    update: true
+    packages:
+    - libhidapi-dev
