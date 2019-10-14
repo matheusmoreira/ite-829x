@@ -43,6 +43,18 @@ static struct command *find(struct command *commands, const char *line)
 	return NULL;
 }
 
+int process_command_vector(struct command *commands, const char **arguments)
+{
+	struct command *command = find(commands, *arguments++);
+	if (command == NULL)
+		return -1; // command not found
+
+	size_t count = 0;
+	for (const char **p = arguments; *p != NULL; ++p, ++count);
+
+	return command->function(count, arguments, command->context);
+}
+
 int process_command_line(struct command *commands, char *line)
 {
 	// Strings will be in the form of interleaved space/non-space characters
