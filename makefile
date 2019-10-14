@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
-CPPFLAGS ?= -Wall -Wextra -Wpedantic
+CPPFLAGS ?= -Wall -Wextra -Wpedantic -Wno-unused-parameter
 
 model = ite-829x
 
