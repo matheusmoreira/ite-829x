@@ -10,6 +10,10 @@
 #define VID 0x048d /* Integrated Technology Express, Inc. */
 #define PID 0x8910 /* ITE Device(829x) */
 
+struct ite_829x {
+	hid_device *keyboard;
+};
+
 /* Clevo Control Center
  * Brightness
  * Wireshark Leftover Capture Data
@@ -34,8 +38,8 @@
  */
 unsigned int set_brightness(const size_t count, const char **arguments, void *context)
 {
-	hid_device *keyboard = context;
-	if (!keyboard)
+	struct ite_829x *ite_829x = context;
+	if (!ite_829x || !ite_829x->keyboard)
 		return 3;
 
 	if (count < 1)
@@ -58,7 +62,7 @@ unsigned int set_brightness(const size_t count, const char **arguments, void *co
 		0x7F
 	};
 
-	if (hid_send_feature_report(keyboard, report, sizeof(report)) == -1)
+	if (hid_send_feature_report(ite_829x->keyboard, report, sizeof(report)) == -1)
 		return 1;
 
 	return 0;
@@ -74,8 +78,8 @@ unsigned int set_brightness(const size_t count, const char **arguments, void *co
  */
 unsigned int set_speed(const size_t count, const char **arguments, void *context)
 {
-	hid_device *keyboard = context;
-	if (!keyboard)
+	struct ite_829x *ite_829x = context;
+	if (!ite_829x || !ite_829x->keyboard)
 		return 3;
 
 	if (count < 1)
@@ -93,7 +97,7 @@ unsigned int set_speed(const size_t count, const char **arguments, void *context
 		0x7F
 	};
 
-	if (hid_send_feature_report(keyboard, report, sizeof(report)) == -1)
+	if (hid_send_feature_report(ite_829x->keyboard, report, sizeof(report)) == -1)
 		return 1;
 
 	return 0;
@@ -117,8 +121,8 @@ unsigned int set_speed(const size_t count, const char **arguments, void *context
  */
 unsigned int set_effects(const size_t count, const char **arguments, void *context)
 {
-	hid_device *keyboard = context;
-	if (!keyboard)
+	struct ite_829x *ite_829x = context;
+	if (!ite_829x || !ite_829x->keyboard)
 		return 3;
 
 	if (count < 1)
@@ -171,7 +175,7 @@ unsigned int set_effects(const size_t count, const char **arguments, void *conte
 		last
 	};
 
-	if (hid_send_feature_report(keyboard, report, sizeof(report)) == -1)
+	if (hid_send_feature_report(ite_829x->keyboard, report, sizeof(report)) == -1)
 		return 1;
 
 	return 0;
@@ -190,8 +194,8 @@ unsigned int set_effects(const size_t count, const char **arguments, void *conte
  */
 unsigned int reset(const size_t count, const char **arguments, void *context)
 {
-	hid_device *keyboard = context;
-	if (!keyboard)
+	struct ite_829x *ite_829x = context;
+	if (!ite_829x || !ite_829x->keyboard)
 		return 3;
 
 	const unsigned char report[] = {
@@ -201,7 +205,7 @@ unsigned int reset(const size_t count, const char **arguments, void *context)
 		0x7F
 	};
 
-	if (hid_send_feature_report(keyboard, report, sizeof(report)) == -1)
+	if (hid_send_feature_report(ite_829x->keyboard, report, sizeof(report)) == -1)
 		return 1;
 
 	return 0;
@@ -242,8 +246,8 @@ unsigned int reset(const size_t count, const char **arguments, void *context)
  */
 unsigned int set_led_color(const size_t count, const char **arguments, void *context)
 {
-	hid_device *keyboard = context;
-	if (!keyboard)
+	struct ite_829x *ite_829x = context;
+	if (!ite_829x || !ite_829x->keyboard)
 		return 3;
 
 	if (count < 4)
@@ -261,7 +265,7 @@ unsigned int set_led_color(const size_t count, const char **arguments, void *con
 		0x7F
 	};
 
-	if (hid_send_feature_report(keyboard, report, sizeof(report)) == -1)
+	if (hid_send_feature_report(ite_829x->keyboard, report, sizeof(report)) == -1)
 		return 1;
 
 	return 0;
@@ -301,12 +305,13 @@ static int to_exit_code(int status, hid_device *keyboard)
  */
 int ite_829x(hid_device *keyboard, const char **arguments, FILE *input)
 {
+	struct ite_829x ite_829x = { keyboard, 0, 0 };
 	struct command ite_829x_commands[] = {
-		{ "brightness", set_brightness, keyboard },
-		{ "speed",      set_speed,      keyboard },
-		{ "effects",    set_effects,    keyboard },
-		{ "reset",      reset,          keyboard },
-		{ "led",        set_led_color,  keyboard },
+		{ "brightness",       set_brightness,           &ite_829x },
+		{ "speed",            set_speed,                &ite_829x },
+		{ "effects",          set_effects,              &ite_829x },
+		{ "reset",            reset,                    &ite_829x },
+		{ "led",              set_led_color,            &ite_829x },
 		{ 0 }
 	};
 
