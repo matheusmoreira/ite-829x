@@ -28,7 +28,7 @@ struct command {
 	void *context;
 };
 
-static struct command *find(struct command *commands, char *line)
+static struct command *find(struct command *commands, const char *line)
 {
 	for (; commands->name != NULL; ++commands) {
 		size_t command_length = strlen(commands->name);
