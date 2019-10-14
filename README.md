@@ -24,9 +24,8 @@ The `hidapi-libusb` library is required by the program.
 
 # Using
 
-    sudo ./ite-829x       # turns off LEDs
-    sudo ./ite-829x 0     # turns off LEDs
-    sudo ./ite-829x 2     # Clevo Control Center, Brightness 1
-    sudo ./ite-829x 4     # Clevo Control Center, Brightness 2
-    sudo ./ite-829x 6     # Clevo Control Center, Brightness 3
-    sudo ./ite-829x 10    # Clevo Control Center, Brightness 4
+    sudo ./ite-829x << LEDs
+        reset
+        brightness+speed 4 0
+        effects 4
+    LEDs
