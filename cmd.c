@@ -45,6 +45,9 @@ static struct command *find(struct command *commands, const char *line)
 
 int process_command_vector(struct command *commands, const char **arguments)
 {
+	if (*arguments == NULL)
+		return 0; // empty arguments list
+
 	struct command *command = find(commands, *arguments++);
 	if (command == NULL)
 		return -1; // command not found
