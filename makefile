@@ -4,7 +4,7 @@ CPPFLAGS ?= -Wall -Wextra -Wpedantic
 
 model = ite-829x
 
-$(model) : $(model).c
+$(model) : $(model).c cmd.c
 	$(CC) -std=c99 $(CPPFLAGS) $(CFLAGS) -lhidapi-libusb $(LDFLAGS) -o $@ $<
 
 .PHONY: clean all

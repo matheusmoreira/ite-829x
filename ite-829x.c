@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -31,10 +32,16 @@
  *
  * It's purpose is unknown. The code reproduces the captured data.
  */
-int set_brightness(hid_device *keyboard, unsigned char brightness)
+unsigned int set_brightness(const size_t count, const char **arguments, void *context)
 {
+	hid_device *keyboard = context;
 	if (!keyboard)
-		return -1;
+		return 3;
+
+	if (count < 1)
+		return 2;
+
+	unsigned char brightness = atoi(*arguments);
 
 	if (brightness > 0x0A)
 		brightness = 0x0A;
@@ -51,7 +58,10 @@ int set_brightness(hid_device *keyboard, unsigned char brightness)
 		0x7F
 	};
 
-	return hid_send_feature_report(keyboard, report, sizeof(report));
+	if (hid_send_feature_report(keyboard, report, sizeof(report)) == -1)
+		return 1;
+
+	return 0;
 }
 
 /* Clevo Control Center
@@ -62,10 +72,16 @@ int set_brightness(hid_device *keyboard, unsigned char brightness)
  * 	2	cc090a0100007f
  * 	3	cc090a0200007f
  */
-int set_speed(hid_device *keyboard, unsigned char speed)
+unsigned int set_speed(const size_t count, const char **arguments, void *context)
 {
+	hid_device *keyboard = context;
 	if (!keyboard)
-		return -1;
+		return 3;
+
+	if (count < 1)
+		return 2;
+
+	unsigned char speed = atoi(*arguments);
 
 	if (speed > 0x02)
 		speed = 0x02;
@@ -77,7 +93,10 @@ int set_speed(hid_device *keyboard, unsigned char speed)
 		0x7F
 	};
 
-	return hid_send_feature_report(keyboard, report, sizeof(report));
+	if (hid_send_feature_report(keyboard, report, sizeof(report)) == -1)
+		return 1;
+
+	return 0;
 }
 
 /* Clevo Control Center
@@ -96,10 +115,16 @@ int set_speed(hid_device *keyboard, unsigned char speed)
  * My keyboard apparently doesn't support the ripple effect,
  * even though it is present in the Clevo Control Center interface.
  */
-int set_effects(hid_device *keyboard, unsigned char effect)
+unsigned int set_effects(const size_t count, const char **arguments, void *context)
 {
+	hid_device *keyboard = context;
 	if (!keyboard)
-		return -1;
+		return 3;
+
+	if (count < 1)
+		return 2;
+
+	const unsigned char effect = atoi(*arguments);
 
 	unsigned char effect1, effect2, last = 0x7F;
 
@@ -146,7 +171,10 @@ int set_effects(hid_device *keyboard, unsigned char effect)
 		last
 	};
 
-	return hid_send_feature_report(keyboard, report, sizeof(report));
+	if (hid_send_feature_report(keyboard, report, sizeof(report)) == -1)
+		return 1;
+
+	return 0;
 }
 
 /* Resets the keyboard back to a clean state.
@@ -160,8 +188,12 @@ int set_effects(hid_device *keyboard, unsigned char effect)
  * 	cc000c0000007f
  *
  */
-int reset(hid_device *keyboard, unsigned char unused)
+unsigned int reset(const size_t count, const char **arguments, void *context)
 {
+	hid_device *keyboard = context;
+	if (!keyboard)
+		return 3;
+
 	const unsigned char report[] = {
 		0xCC,
 		0x00, 0x0C,
@@ -169,7 +201,10 @@ int reset(hid_device *keyboard, unsigned char unused)
 		0x7F
 	};
 
-	return hid_send_feature_report(keyboard, report, sizeof(report));
+	if (hid_send_feature_report(keyboard, report, sizeof(report)) == -1)
+		return 1;
+
+	return 0;
 }
 
 /* Clevo Control Center
@@ -205,15 +240,19 @@ int reset(hid_device *keyboard, unsigned char unused)
  * All of them can be controlled individually.
  * After resetting the keyboard, all keys must be reconfigured.
  */
-int set_led_color(hid_device *keyboard, unsigned char led)
+unsigned int set_led_color(const size_t count, const char **arguments, void *context)
 {
+	hid_device *keyboard = context;
 	if (!keyboard)
-		return -1;
+		return 3;
 
-	// The keyboard's default color is blue.
-	// That's how it's lit up when the computer turns on.
-	// Use the default color for now. Parameters can be added later.
-	unsigned char r = 0x00, g = 0x00, b = 0xFF;
+	if (count < 4)
+		return 2;
+
+	const unsigned char led = atoi(arguments[0]);
+	const unsigned char r   = atoi(arguments[1]);
+	const unsigned char g   = atoi(arguments[2]);
+	const unsigned char b   = atoi(arguments[3]);
 
 	const unsigned char report[] = {
 		0xCC,
@@ -222,56 +261,51 @@ int set_led_color(hid_device *keyboard, unsigned char led)
 		0x7F
 	};
 
-	return hid_send_feature_report(keyboard, report, sizeof(report));
+	if (hid_send_feature_report(keyboard, report, sizeof(report)) == -1)
+		return 1;
+
+	return 0;
 }
+
+#include "cmd.c"
 
 /* Executes the requested operation on the given keyboard.
  * Returns 0 if successful and 1 in case of failure.
  */
-int ite_829x(hid_device *keyboard, char *command, char *parameter)
+int ite_829x(hid_device *keyboard, FILE *input)
 {
+	struct command ite_829x_commands[] = {
+		{ "brightness", set_brightness, keyboard },
+		{ "speed",      set_speed,      keyboard },
+		{ "effects",    set_effects,    keyboard },
+		{ "reset",      reset,          keyboard },
+		{ "led",        set_led_color,  keyboard },
+		{ 0 }
+	};
 
-	int (*set)(hid_device *, unsigned char) = set_brightness;
-	unsigned char value = 0;
-	const char *name = "brightness";
-
-	switch (*command) {
-	case '\0':
-		break;
-	case 'b':
-		value = atoi(parameter);
-		break;
-	default:
-		value = atoi(command);
-		break;
-	case 's':
-		set = set_speed;
-		value = atoi(parameter);
-		name = "speed";
-		break;
-	case 'e':
-		set = set_effects;
-		value = atoi(parameter);
-		name = "effect";
-		break;
-	case 'r':
-		set = reset;
-		name = "reset";
-		break;
-	case 'l':
-		set = set_led_color;
-		value = atoi(parameter);
-		name = "key";
-		break;
-	}
-
-	if (set(keyboard, value) < 0) {
-		fprintf(stderr, "Could not set %s to %hhu - %ls\n",
-			name, value, hid_error(keyboard));
+	switch (process_command_file(ite_829x_commands, input)) {
+	case -2:
+		fputs("Memory allocation error\n", stderr);
+		return 4;
+	case -1:
+		fputs("Unknown command\n", stderr);
+		return 3;
+	case 0:
+		return 0; // Success.
+	case 1:
+		fprintf(stderr,
+		        "Could not send feature report: %ls\n",
+		        hid_error(keyboard));
 		return 1;
+	case 2:
+		fputs("Incorrect number of parameters\n", stderr);
+		return 3;
+	case 3:
+		fputs("NULL keyboard hid_device\n", stderr);
+		return 4;
+	default:
+		return -1; // Unknown return value.
 	}
-
-	return 0;
 }
 
 int main(int count, char **arguments)
@@ -287,19 +321,14 @@ int main(int count, char **arguments)
 		return 2;
 	}
 
-	if (count != 3) {
-		fprintf(stderr, "%s command parameter\n", *arguments);
-		return 3;
-	}
-
-	int code = ite_829x(keyboard, arguments[1], arguments[2]);
+	int code = ite_829x(keyboard, stdin);
 
 	hid_close(keyboard);
 
 	if (hid_exit() == -1) {
 		fputs("Error during hidapi-libusb finalization\n", stderr);
 		if (code == 0)
-			return 5;
+			return 4;
 	}
 
 	return code;
