@@ -16,6 +16,8 @@ USB data:
 
 # Building
 
+[![Build Status](https://travis-ci.com/matheusmoreira/ite-829x.svg?branch=master)](https://travis-ci.com/matheusmoreira/ite-829x)
+
 The `hidapi-libusb` library is required by the program.
 
     make    # creates the ite-829x executable
