@@ -12,7 +12,63 @@
 
 struct ite_829x {
 	hid_device *keyboard;
+	unsigned char current_brightness;
+	unsigned char current_speed;
 };
+
+/* Clevo Control Center
+ * Brightness and effect speed
+ * Wireshark Leftover Capture Data
+ *
+ * 	          	cc090r0s00007f
+ *
+ * 	brightness	r			[0x0, 0xA]
+ * 	speed     	s			[0x0, 0x2]
+ *
+ * Brightness seems to be scale from 1 to 10 with 0 being off.
+ * Values above 0x0A seem to have the same effect as 0x0A.
+ *
+ * Speed controls how fast the keyboard's effects animate.
+ * Seems to be a scale from 0 to 2.
+ */
+static unsigned int set_brightness_and_speed_common(struct ite_829x *ite_829x)
+{
+	if (!ite_829x || !ite_829x->keyboard)
+		return 3;
+
+	if (ite_829x->current_brightness > 0x0A)
+		ite_829x->current_brightness = 0x0A;
+
+	if (ite_829x->current_speed > 0x02)
+		ite_829x->current_speed = 0x02;
+
+	const unsigned char report[] = {
+		0xCC, 0x09,
+		ite_829x->current_brightness, ite_829x->current_speed,
+		0x00, 0x00,
+		0x7F
+	};
+
+	if (hid_send_feature_report(ite_829x->keyboard, report, sizeof(report)) == -1)
+		return 1;
+
+	return 0;
+}
+
+unsigned int set_brightness_and_speed(const size_t count, const char **arguments, void *context)
+{
+	struct ite_829x *ite_829x = context;
+	if (!ite_829x || !ite_829x->keyboard)
+		return 3;
+
+	if (count < 2)
+		return 2;
+
+	ite_829x->current_brightness = atoi(arguments[0]);
+	ite_829x->current_speed      = atoi(arguments[1]);
+
+	return set_brightness_and_speed_common(ite_829x);
+}
 
 /* Clevo Control Center
  * Brightness
@@ -27,14 +83,6 @@ struct ite_829x {
  * Other brightness values are also valid: 1, 3, 5, 7, 8, 9.
  * Values above 0x0A seem to have the same effect as 0x0A.
  * Seems to be a scale from 1 to 10 with 0 being off.
- *
- * The byte that follows the brightness value differs in the captured output.
- * However, it doesn't seem to matter. During testing:
- *
- * 	cc09000200007f	turns the LEDs off
- * 	cc090a0000007f	turns the LEDs on at brightness 10
- *
- * It's purpose is unknown. The code reproduces the captured data.
  */
 unsigned int set_brightness(const size_t count, const char **arguments, void *context)
 {
@@ -45,27 +93,9 @@ unsigned int set_brightness(const size_t count, const char **arguments, void *co
 	if (count < 1)
 		return 2;
 
-	unsigned char brightness = atoi(*arguments);
+	ite_829x->current_brightness = atoi(*arguments);
 
-	if (brightness > 0x0A)
-		brightness = 0x0A;
-
-	unsigned char unknown = 0x00;
-
-	if (brightness > 0)
-		unknown = 0x02;
-
-	const unsigned char report[] = {
-		0xCC, 0x09,
-		brightness, unknown,
-		0x00, 0x00,
-		0x7F
-	};
-
-	if (hid_send_feature_report(ite_829x->keyboard, report, sizeof(report)) == -1)
-		return 1;
-
-	return 0;
+	return set_brightness_and_speed_common(ite_829x);
 }
 
 /* Clevo Control Center
@@ -85,22 +115,9 @@ unsigned int set_speed(const size_t count, const char **arguments, void *context
 	if (count < 1)
 		return 2;
 
-	unsigned char speed = atoi(*arguments);
+	ite_829x->current_speed = atoi(*arguments);
 
-	if (speed > 0x02)
-		speed = 0x02;
-
-	const unsigned char report[] = {
-		0xCC, 0x09,
-		0x0A, speed,
-		0x00, 0x00,
-		0x7F
-	};
-
-	if (hid_send_feature_report(ite_829x->keyboard, report, sizeof(report)) == -1)
-		return 1;
-
-	return 0;
+	return set_brightness_and_speed_common(ite_829x);
 }
 
 /* Clevo Control Center
@@ -307,6 +324,7 @@ int ite_829x(hid_device *keyboard, const char **arguments, FILE *input)
 {
 	struct ite_829x ite_829x = { keyboard, 0, 0 };
 	struct command ite_829x_commands[] = {
+		{ "brightness+speed", set_brightness_and_speed, &ite_829x },
 		{ "brightness",       set_brightness,           &ite_829x },
 		{ "speed",            set_speed,                &ite_829x },
 		{ "effects",          set_effects,              &ite_829x },
