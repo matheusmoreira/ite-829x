@@ -31,6 +31,11 @@ struct command {
 	void *context;
 };
 
+static int string_empty_or_null(const char *string)
+{
+	return string == NULL || *string == '\0';
+}
+
 static struct command *find(struct command *commands, const char *line)
 {
 	for (; commands->name != NULL; ++commands) {
@@ -60,7 +65,7 @@ int process_command_vector(struct command *commands, const char **arguments)
 
 int process_command_line(struct command *commands, const char *line)
 {
-	if (commands == NULL || commands->name == NULL || line == NULL || *line == '\0')
+	if (commands == NULL || commands->name == NULL || string_empty_or_null(line))
 		return 0; // NULL or empty inputs
 
 	int result = 0;
