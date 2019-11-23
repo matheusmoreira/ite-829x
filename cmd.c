@@ -98,20 +98,18 @@ free_and_exit:
 
 int process_command_file(struct command *commands, FILE *input)
 {
-	char *buffer = NULL;
-	size_t length = 0;
-
 	// should this function process one line at a time?
 	// maybe the caller should do the looping
 	while (1) {
+		char *buffer = NULL;
+		size_t length = 0;
+
 		if (getline(&buffer, &length, input) == -1)
 			break;
 
 		int result = process_command_line(commands, buffer);
 
 		free(buffer);
-		buffer = NULL;
-		length = 0;
 
 		if (result != 0)
 			return result;
