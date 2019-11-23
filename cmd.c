@@ -82,6 +82,45 @@ int process_command_vector(struct commands *commands, const char **arguments)
 	return command->function(count, arguments, commands->context);
 }
 
+static int process_command_line_copy(struct commands *commands, char *copy, size_t length)
+{
+	int result = 0;
+
+	// Strings will be in the form of interleaved space/non-space characters
+	// For example: "a b c d"
+	// For a string of length N, at least ceil(N / 2) pointers are required
+	// to point at all possible tokens, plus one for the trailing NULL
+	const char **arguments = calloc(DIV_CEIL(length, 2) + 1, sizeof(*arguments));
+	if (arguments == NULL) {
+		result = -2; // memory allocation error
+		goto free_and_exit;
+	}
+
+	copy = strtok(copy, " \t\n");
+	if (copy == NULL) {
+		result = 0; // empty line
+		goto free_and_exit;
+	}
+
+	struct command *command = find(commands->list, copy);
+	if (command == NULL) {
+		result = -1; // command not found
+		goto free_and_exit;
+	}
+
+	size_t i = 0;
+	for (char *argument = copy; argument != NULL; ++i)
+		arguments[i] = argument = strtok(NULL, " \t\n");
+	arguments[i] = NULL;
+
+	result = command->function(i - 1, arguments, commands->context);
+
+
+free_and_exit:
+	free(arguments);
+	return result;
+}
+
 int process_command_line(struct commands *commands, const char *line)
 {
 	if (string_empty_or_null(line) || commands_empty_or_null(commands))
@@ -94,41 +133,13 @@ int process_command_line(struct commands *commands, const char *line)
 	char *copy = malloc(length + 1);
 	if (copy == NULL) {
 		result = -2; // memory allocation error
-		goto free_copy;
+		goto free_and_exit;
 	}
 	strcpy(copy, line);
 
-	// Strings will be in the form of interleaved space/non-space characters
-	// For example: "a b c d"
-	// For a string of length N, at least ceil(N / 2) pointers are required
-	// to point at all possible tokens, plus one for the trailing NULL
-	const char **arguments = calloc(DIV_CEIL(length, 2) + 1, sizeof(*arguments));
-	if (arguments == NULL) {
-		result = -2; // memory allocation error
-		goto free_copy_arguments;
-	}
+	result = process_command_line_copy(commands, copy, length);
 
-	copy = strtok(copy, " \t\n");
-	if (copy == NULL) {
-		result = 0; // empty line
-		goto free_copy_arguments;
-	}
-
-	struct command *command = find(commands->list, copy);
-	if (command == NULL) {
-		result = -1; // command not found
-		goto free_copy_arguments;
-	}
-
-	size_t i = 0;
-	for (char *argument = copy; argument != NULL; ++i)
-		arguments[i] = argument = strtok(NULL, " \t\n");
-	arguments[i] = NULL;
-	result = command->function(i - 1, arguments, commands->context);
-
-free_copy_arguments:
-	free(arguments);
-free_copy:
+free_and_exit:
 	free(copy);
 	return result;
 }
