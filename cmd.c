@@ -21,6 +21,8 @@
 #include <string.h>
 #include <errno.h>
 
+#define DIV_CEIL(x, y) ((((x) - 1) / (y)) + 1)
+
 typedef unsigned int (*command_function)(size_t count, const char **arguments, void *context);
 
 struct command {
@@ -76,8 +78,7 @@ int process_command_line(struct command *commands, const char *line)
 	// For example: "a b c d"
 	// For a string of length N, at least ceil(N / 2) pointers are required
 	// to point at all possible tokens, plus one for the trailing NULL
-	size_t size = (length / 2) + 1;
-	const char **arguments = calloc(size + 1, sizeof(*arguments));
+	const char **arguments = calloc(DIV_CEIL(length, 2) + 1, sizeof(*arguments));
 	if (arguments == NULL) {
 		result = -2; // memory allocation error
 		goto free_copy_arguments;
