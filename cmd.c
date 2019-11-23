@@ -149,11 +149,11 @@ int process_command_file(struct commands *commands, FILE *input)
 	int result = 0;
 
 	while (1) {
-		char *buffer = NULL;
+		char *line = NULL;
 		size_t length = 0;
 
 		errno = 0;
-		ssize_t read = getline(&buffer, &length, input);
+		ssize_t read = getline(&line, &length, input);
 
 		if (read == -1) {
 			if (errno)
@@ -162,10 +162,10 @@ int process_command_file(struct commands *commands, FILE *input)
 			goto free;
 		}
 
-		result = process_command_line(commands, buffer);
+		result = process_command_line(commands, line);
 
 free:
-		free(buffer);
+		free(line);
 
 		if (result || read == -1)
 			break;
