@@ -59,44 +59,55 @@ int process_command_vector(struct command *commands, const char **arguments)
 	return command->function(count, arguments, command->context);
 }
 
-int process_command_line(struct command *commands, char *line)
+int process_command_line(struct command *commands, const char *line)
 {
 	if (commands == NULL || commands->name == NULL || line == NULL || *line == '\0')
 		return 0; // NULL or empty inputs
+
+	int result = 0;
+
+	// strtok will modify the string so make a copy first
+	size_t length = strlen(line);
+	char *copy = malloc(length + 1);
+	if (copy == NULL) {
+		result = -2; // memory allocation error
+		goto free_copy;
+	}
+	strcpy(copy, line);
 
 	// Strings will be in the form of interleaved space/non-space characters
 	// For example: "a b c d"
 	// For a string of length N, at least ceil(N / 2) pointers are required
 	// to point at all possible tokens, plus one for the trailing NULL
-	size_t size = (strlen(line) / 2) + 1;
+	size_t size = (length / 2) + 1;
 	const char **arguments = calloc(size + 1, sizeof(*arguments));
-	int result;
-
 	if (arguments == NULL) {
 		result = -2; // memory allocation error
-		goto free_and_exit;
+		goto free_copy_arguments;
 	}
 
-	line = strtok(line, " \t\n");
-	if (line == NULL) {
+	copy = strtok(copy, " \t\n");
+	if (copy == NULL) {
 		result = 0; // empty line
-		goto free_and_exit;
+		goto free_copy_arguments;
 	}
 
-	struct command *command = find(commands, line);
+	struct command *command = find(commands, copy);
 	if (command == NULL) {
 		result = -1; // command not found
-		goto free_and_exit;
+		goto free_copy_arguments;
 	}
 
 	size_t i = 0;
-	for (char *argument = line; argument != NULL; ++i)
+	for (char *argument = copy; argument != NULL; ++i)
 		arguments[i] = argument = strtok(NULL, " \t\n");
 	arguments[i] = NULL;
 	result = command->function(i - 1, arguments, command->context);
 
-free_and_exit:
+free_copy_arguments:
 	free(arguments);
+free_copy:
+	free(copy);
 	return result;
 }
 
