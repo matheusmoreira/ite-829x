@@ -98,6 +98,8 @@ free_and_exit:
 
 int process_command_file(struct command *commands, FILE *input)
 {
+	int result = 0;
+
 	// should this function process one line at a time?
 	// maybe the caller should do the looping
 	while (1) {
@@ -107,13 +109,13 @@ int process_command_file(struct command *commands, FILE *input)
 		if (getline(&buffer, &length, input) == -1)
 			break;
 
-		int result = process_command_line(commands, buffer);
+		result = process_command_line(commands, buffer);
 
 		free(buffer);
 
-		if (result != 0)
-			return result;
+		if (result)
+			break;
 	}
 
-	return 0;
+	return result;
 }
