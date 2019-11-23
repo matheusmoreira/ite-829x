@@ -46,8 +46,8 @@ static struct command *find(struct command *commands, const char *line)
 
 int process_command_vector(struct command *commands, const char **arguments)
 {
-	if (*arguments == NULL)
-		return 0; // empty arguments list
+	if (commands == NULL || commands->name == NULL || arguments == NULL || *arguments == NULL)
+		return 0; // NULL or empty inputs
 
 	struct command *command = find(commands, *arguments++);
 	if (command == NULL)
@@ -61,6 +61,9 @@ int process_command_vector(struct command *commands, const char **arguments)
 
 int process_command_line(struct command *commands, char *line)
 {
+	if (commands == NULL || commands->name == NULL || line == NULL || *line == '\0')
+		return 0; // NULL or empty inputs
+
 	// Strings will be in the form of interleaved space/non-space characters
 	// For example: "a b c d"
 	// For a string of length N, at least ceil(N / 2) pointers are required
