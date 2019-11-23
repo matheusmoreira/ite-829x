@@ -113,10 +113,13 @@ int process_command_file(struct command *commands, FILE *input)
 		if (read == -1) {
 			if (errno)
 				result = -2; // memory allocation error
+
+			goto free;
 		}
 
 		result = process_command_line(commands, buffer);
 
+free:
 		free(buffer);
 
 		if (result || read == -1)
