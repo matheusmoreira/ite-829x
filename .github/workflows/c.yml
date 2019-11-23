@@ -1,0 +1,12 @@
+name: Continuous Integration for C
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: make
+      run: make
