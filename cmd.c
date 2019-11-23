@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 typedef unsigned int (*command_function)(size_t count, const char **arguments, void *context);
 
@@ -106,14 +107,19 @@ int process_command_file(struct command *commands, FILE *input)
 		char *buffer = NULL;
 		size_t length = 0;
 
-		if (getline(&buffer, &length, input) == -1)
-			break;
+		errno = 0;
+		ssize_t read = getline(&buffer, &length, input);
+
+		if (read == -1) {
+			if (errno)
+				result = -2; // memory allocation error
+		}
 
 		result = process_command_line(commands, buffer);
 
 		free(buffer);
 
-		if (result)
+		if (result || read == -1)
 			break;
 	}
 
