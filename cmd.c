@@ -101,8 +101,6 @@ int process_command_file(struct command *commands, FILE *input)
 {
 	int result = 0;
 
-	// should this function process one line at a time?
-	// maybe the caller should do the looping
 	while (1) {
 		char *buffer = NULL;
 		size_t length = 0;
