@@ -11,4 +11,4 @@ $(model) : $(model).c cmd.c
 .DEFAULT_GOAL = all
 all: $(model)
 clean:
-	rm $(model)
+	rm -f $(model)
