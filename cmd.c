@@ -34,9 +34,6 @@ static struct command *find(struct command *commands, const char *line)
 	for (; commands->name != NULL; ++commands) {
 		size_t command_length = strlen(commands->name);
 
-		if (command_length != strlen(line))
-			continue;
-
 		if (strncmp(commands->name, line, command_length) == 0)
 			return commands;
 	}
