@@ -65,7 +65,7 @@ int process_command_line(struct command *commands, char *line)
 	// For a string of length N, at least ceil(N / 2) pointers are required
 	// to point at all possible tokens, plus one for the trailing NULL
 	size_t size = (strlen(line) / 2) + 1;
-	const char **arguments = calloc(sizeof(*arguments), size + 1);
+	const char **arguments = calloc(size + 1, sizeof(*arguments));
 	int result;
 
 	if (arguments == NULL) {
