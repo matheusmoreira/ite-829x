@@ -338,22 +338,25 @@ static int to_exit_code(int status, hid_device *keyboard)
 int ite_829x(hid_device *keyboard, const char **arguments, FILE *input)
 {
 	struct ite_829x ite_829x = { keyboard, 0, 0 };
-	struct command ite_829x_commands[] = {
-		{ "brightness+speed", set_brightness_and_speed, &ite_829x },
-		{ "brightness",       set_brightness,           &ite_829x },
-		{ "speed",            set_speed,                &ite_829x },
-		{ "effects",          set_effects,              &ite_829x },
-		{ "reset",            reset,                    &ite_829x },
-		{ "led",              set_led_color,            &ite_829x },
-		{ 0 }
+	struct commands ite_829x_commands = {
+		&ite_829x,
+		(struct command[]) {
+			{ "brightness+speed", set_brightness_and_speed },
+			{ "brightness",       set_brightness,          },
+			{ "speed",            set_speed,               },
+			{ "effects",          set_effects,             },
+			{ "reset",            reset,                   },
+			{ "led",              set_led_color,           },
+			{ 0 }
+		}
 	};
 
-	int result = process_command_vector(ite_829x_commands, arguments);
+	int result = process_command_vector(&ite_829x_commands, arguments);
 	int code = to_exit_code(result, keyboard);
 	if (code != 0)
 		return code;
 
-	result = process_command_file(ite_829x_commands, input);
+	result = process_command_file(&ite_829x_commands, input);
 	return to_exit_code(result, keyboard);
 }
 

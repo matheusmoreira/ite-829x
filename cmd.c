@@ -28,8 +28,22 @@ typedef unsigned int (*command_function)(size_t count, const char **arguments, v
 struct command {
 	const char *name;
 	command_function function;
-	void *context;
 };
+
+struct commands {
+	void *context;
+	struct command *list;
+};
+
+static int command_empty_or_null(struct command *command)
+{
+	return command == NULL || command->name == NULL || command->function == NULL;
+}
+
+static int commands_empty_or_null(struct commands *commands)
+{
+	return commands == NULL || command_empty_or_null(commands->list);
+}
 
 static int string_empty_or_null(const char *string)
 {
@@ -53,24 +67,24 @@ static struct command *find(struct command *commands, const char *line)
 	return NULL;
 }
 
-int process_command_vector(struct command *commands, const char **arguments)
+int process_command_vector(struct commands *commands, const char **arguments)
 {
-	if (commands == NULL || commands->name == NULL || vector_empty_or_null(arguments))
+	if (vector_empty_or_null(arguments) || commands_empty_or_null(commands))
 		return 0; // NULL or empty inputs
 
-	struct command *command = find(commands, *arguments++);
+	struct command *command = find(commands->list, *arguments++);
 	if (command == NULL)
 		return -1; // command not found
 
 	size_t count = 0;
 	for (const char **p = arguments; *p != NULL; ++p, ++count);
 
-	return command->function(count, arguments, command->context);
+	return command->function(count, arguments, commands->context);
 }
 
-int process_command_line(struct command *commands, const char *line)
+int process_command_line(struct commands *commands, const char *line)
 {
-	if (commands == NULL || commands->name == NULL || string_empty_or_null(line))
+	if (string_empty_or_null(line) || commands_empty_or_null(commands))
 		return 0; // NULL or empty inputs
 
 	int result = 0;
@@ -100,7 +114,7 @@ int process_command_line(struct command *commands, const char *line)
 		goto free_copy_arguments;
 	}
 
-	struct command *command = find(commands, copy);
+	struct command *command = find(commands->list, copy);
 	if (command == NULL) {
 		result = -1; // command not found
 		goto free_copy_arguments;
@@ -110,7 +124,7 @@ int process_command_line(struct command *commands, const char *line)
 	for (char *argument = copy; argument != NULL; ++i)
 		arguments[i] = argument = strtok(NULL, " \t\n");
 	arguments[i] = NULL;
-	result = command->function(i - 1, arguments, command->context);
+	result = command->function(i - 1, arguments, commands->context);
 
 free_copy_arguments:
 	free(arguments);
@@ -119,7 +133,7 @@ free_copy:
 	return result;
 }
 
-int process_command_file(struct command *commands, FILE *input)
+int process_command_file(struct commands *commands, FILE *input)
 {
 	int result = 0;
 
